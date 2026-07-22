@@ -1,6 +1,6 @@
 # LMS Gamification Requirements
 
-This repository contains the current analysis and revised business requirements for adding gamification to an existing Learning Management System (LMS).
+This repository contains the current analysis, business requirements, and implementation-planning material for adding gamification to an existing Learning Management System (LMS).
 
 ## Assignment focus
 
@@ -8,100 +8,124 @@ The proposed gamification system must:
 
 - increase learner retention, final-exam participation, and course completion;
 - encourage meaningful cooperation between learners outside scheduled lessons;
-- support both live and self-paced courses;
+- support both live and self-paced course instances;
 - avoid rewarding unnecessary website usage;
 - account for different learner motivations;
-- extend the existing LMS without modifying the supplied Mongoose models.
+- extend the existing LMS through separate models and integrations rather than modifying the supplied core models.
 
 ## Current problem
 
-According to the project context discussed in the lecture, a course may attract roughly 650 enrollments, while only about 15–20% of the enrolled learners attend the final exam.
+According to the project context discussed in the lecture, a course may attract roughly 650 enrollments, while only about 15–20% of enrolled learners attend the final exam.
 
 The main challenge is therefore not initial enrollment. It is keeping learners engaged and supported throughout the course until they reach the final exam and complete the course, then helping them retain important knowledge afterward.
 
 ## Central design principle
 
-> Reward meaningful learning progress, preparation, completion, cooperation, and retained knowledge—not clicks, logins, reactions, message volume, or time spent on the website.
+> Reward meaningful learning progress, preparation, completion, cooperation, and retained knowledge—not clicks, logins, reactions, message volume, time online, or random activity indicators.
 
-## Current implementation focus
+## Evidence reviewed
 
-The scope was revised after stakeholder feedback.
+The documentation was first created from a limited set of exported Mongoose models. It has now been updated after reviewing the full supplied LMS mock-up, including:
 
-The main implementation direction is:
+- backend models, services, controllers, routes, and authorization middleware;
+- frontend learner, teacher, content-manager, and administrator screens;
+- course, course-instance, lesson-completion, assessment, exam, certificate, program, and survey flows;
+- seed data and the current placeholder Activity Tracker.
 
-- course-instance Study Groups;
-- Collaborative Challenges assigned to groups or teams;
-- visible shared progress;
-- verified individual contribution;
-- separate group completion and personal reward eligibility;
-- limited meaningful XP and achievements connected to trusted challenge events.
+The source-grounded review is recorded in:
 
-The recommended extension is:
+- [Current LMS Map](docs/01-project-context/current-lms.md);
+- [Detailed Current LMS Maps](docs/01-project-context/current-lms/README.md);
+- [Mock-up Requirements Impact Review](docs/02-planning-and-standards/mockup-requirements-impact-review.md).
 
-- Post-course Knowledge Refreshers;
-- short optional revision activities;
-- topic-level feedback;
-- links back to relevant completed material;
-- future Skill Profile integration.
+## Current implementation direction
 
-General Course Q&A and reaction-based Peer Contribution Recognition were removed from active scope. The reasons are documented in [`docs/stakeholder-feedback-and-scope-revision.md`](docs/01-project-context/stakeholder-feedback-and-scope-revision.md).
+The main product identity remains:
+
+> Study Groups with Collaborative Challenges, supported by meaningful progress and rewards, followed by optional Post-course Knowledge Refreshers.
+
+The recommended first demonstration path is:
+
+1. secure and de-duplicate trusted source events;
+2. show Course Progress for one tracked Course Instance;
+3. create or assign a Study Group;
+4. assign one Collaborative Challenge;
+5. record verified individual contributions and shared progress;
+6. distinguish group completion from personal reward eligibility;
+7. award limited XP and one achievement exactly once;
+8. display the result in Course Details and Profile.
+
+The next implementation stage can add Final Exam Readiness using the mock-up's real exam enrollment, scheduling, instructions, submissions, scores, and pass/fail data. Post-course Knowledge Refreshers remain the recommended later extension.
+
+General Course Q&A and reaction-based Peer Contribution Recognition were removed from active scope. The reasons are documented in [Stakeholder Feedback and Scope Revision](docs/01-project-context/stakeholder-feedback-and-scope-revision.md).
 
 ## Document maturity
 
-All feature documents are rough functional outlines rather than final product specifications. Exact terminology, visual design, thresholds, reward amounts, model names, and implementation details may change after stakeholder, UX, and technical review.
+All feature documents are rough functional outlines rather than final product or technical specifications. Exact terminology, visual design, thresholds, XP amounts, badge artwork, payloads, schemas, and implementation details may change during coding and stakeholder review.
 
-A later interface may use a stronger visual theme, but the business requirements use plain functional terminology. See [`docs/document-status-and-theming.md`](docs/02-planning-and-standards/document-status-and-theming.md).
+A later interface may use a stronger visual theme, but the requirements use plain functional terminology. See [Document Status and Theming](docs/02-planning-and-standards/document-status-and-theming.md).
 
 ## Documentation
 
-See the [organized documentation index](docs/README.md) for the folder-by-folder structure.
+See the [organized documentation index](docs/README.md) for the complete folder structure.
 
-### Scope and analysis
+### Project context and source analysis
 
-- [`docs/current-lms.md`](docs/01-project-context/current-lms.md) — map of the supplied LMS models and confirmed system capabilities.
-- [`docs/purpose-and-goals.md`](docs/01-project-context/purpose-and-goals.md) — business problem, goals, non-goals, and success measures.
-- [`docs/player-motivations.md`](docs/01-project-context/player-motivations.md) — Achievers, Socializers, Explorers, and Competitors.
-- [`docs/stakeholder-feedback-and-scope-revision.md`](docs/01-project-context/stakeholder-feedback-and-scope-revision.md) — lecturer feedback, removed features, and revised focus.
-- [`docs/feature-scope.md`](docs/02-planning-and-standards/feature-scope.md) — active, supporting, later, future, and excluded features.
-- [`docs/mvp-prioritization.md`](docs/02-planning-and-standards/mvp-prioritization.md) — implementation tiers and the recommended demonstration flow.
-- [`docs/requirements-template.md`](docs/02-planning-and-standards/requirements-template.md) — structure to use when specifying a feature.
-- [`docs/document-status-and-theming.md`](docs/02-planning-and-standards/document-status-and-theming.md) — maturity of the outlines and separation between functional rules and presentation.
-- [`docs/consistency-review.md`](docs/02-planning-and-standards/consistency-review.md) — terminology, feature boundaries, corrections, and remaining decisions.
+- [Current LMS Map](docs/01-project-context/current-lms.md)
+- [Detailed Current LMS Maps](docs/01-project-context/current-lms/README.md)
+- [Purpose and Goals](docs/01-project-context/purpose-and-goals.md)
+- [Player Motivations](docs/01-project-context/player-motivations.md)
+- [Stakeholder Feedback and Scope Revision](docs/01-project-context/stakeholder-feedback-and-scope-revision.md)
+- [Source Note](docs/01-project-context/source-note.md)
+
+### Planning and standards
+
+- [Feature Scope](docs/02-planning-and-standards/feature-scope.md)
+- [MVP Prioritization](docs/02-planning-and-standards/mvp-prioritization.md)
+- [Mock-up Requirements Impact Review](docs/02-planning-and-standards/mockup-requirements-impact-review.md)
+- [Requirements Template](docs/02-planning-and-standards/requirements-template.md)
+- [Document Status and Theming](docs/02-planning-and-standards/document-status-and-theming.md)
+- [Consistency Review](docs/02-planning-and-standards/consistency-review.md)
 
 ### Primary implementation features
 
-- [`docs/study-groups.md`](docs/03-primary-features/study-groups.md) — small course-instance learning groups, membership, access, roles, and safeguards.
-- [`docs/collaborative-challenges.md`](docs/03-primary-features/collaborative-challenges.md) — shared learning goals, group progress, individual contribution, completion, and fair rewards.
-- [`docs/post-course-knowledge-refreshers.md`](docs/03-primary-features/post-course-knowledge-refreshers.md) — optional post-course revision, timing, attempts, feedback, review links, and corrections.
+- [Study Groups](docs/03-primary-features/study-groups.md)
+- [Collaborative Challenges](docs/03-primary-features/collaborative-challenges.md)
+- [Post-course Knowledge Refreshers](docs/03-primary-features/post-course-knowledge-refreshers.md)
 
 ### Supporting mechanics
 
-- [`docs/course-progress.md`](docs/04-supporting-mechanics/course-progress.md) — required, optional, and combined learner progress.
-- [`docs/course-milestones.md`](docs/04-supporting-mechanics/course-milestones.md) — configurable recognition of meaningful course checkpoints.
-- [`docs/final-exam-readiness.md`](docs/04-supporting-mechanics/final-exam-readiness.md) — exam readiness requirements, status, and missing actions.
-- [`docs/meaningful-xp-and-levels.md`](docs/04-supporting-mechanics/meaningful-xp-and-levels.md) — trusted XP transactions, levels, limits, duplicate prevention, and corrections.
-- [`docs/achievements-and-badges.md`](docs/04-supporting-mechanics/achievements-and-badges.md) — achievement awarding, badge display, scope, repeatability, privacy, and corrections.
-- [`docs/badges-and-xp-sources.md`](docs/04-supporting-mechanics/badges-and-xp-sources.md) — small initial list of possible badges and meaningful XP sources.
-- [`docs/gamification-event-matrix.md`](docs/06-integrations/gamification-event-matrix.md) — proposed event ownership, availability, consumers, and correction flow.
+- [Course Progress](docs/04-supporting-mechanics/course-progress.md)
+- [Course Milestones](docs/04-supporting-mechanics/course-milestones.md)
+- [Final Exam Readiness](docs/04-supporting-mechanics/final-exam-readiness.md)
+- [Meaningful XP and Levels](docs/04-supporting-mechanics/meaningful-xp-and-levels.md)
+- [Achievements and Badges](docs/04-supporting-mechanics/achievements-and-badges.md)
+- [Initial Badges and XP Sources](docs/04-supporting-mechanics/badges-and-xp-sources.md)
 
-### Later variants and future integration
+### Later variants and integrations
 
-- [`docs/optional-exploration-challenges.md`](docs/05-later-features/optional-exploration-challenges.md) — voluntary discovery paths, side activities, optional progress, and safeguards.
-- [`docs/opt-in-competitive-challenges.md`](docs/05-later-features/opt-in-competitive-challenges.md) — voluntary personal-best, cohort, and team competitions with fairness and privacy rules.
-- [`docs/future-skill-profile-integration.md`](docs/06-integrations/future-skill-profile-integration.md) — future skill evidence, course recommendations, and adaptive self-paced path boundaries.
-
-### Source note
-
-- [`docs/source-note.md`](docs/01-project-context/source-note.md) — note about the supplied LMS model evidence.
+- [Optional Exploration Challenges](docs/05-later-features/optional-exploration-challenges.md)
+- [Opt-in Competitive Challenges](docs/05-later-features/opt-in-competitive-challenges.md)
+- [Gamification Event Matrix](docs/06-integrations/gamification-event-matrix.md)
+- [Future Skill Profile Integration](docs/06-integrations/future-skill-profile-integration.md)
 
 ## Current status
 
-The existing LMS has been mapped, the purpose and motivation framework have been defined, and the scope has been narrowed after stakeholder feedback.
+The requirements phase is substantially complete and grounded in the supplied full LMS mock-up. The Current LMS Map, entity relationships, workflows, feature boundaries, event ownership, MVP sequence, and main integration risks are documented.
 
-The primary implementation requirements now cover Study Groups and Collaborative Challenges. Post-course Knowledge Refreshers are documented as the recommended extension. Course Progress, Course Milestones, Final Exam Readiness, Meaningful XP and Levels, and Achievements and Badges remain supporting requirements.
+Application code has not yet been added to this requirements repository. Implementation is planned for a later stage against the supplied LMS mock-up.
 
-A proposed event matrix, MVP prioritization, future Skill Profile integration boundary, and final consistency review are included.
+## Main implementation decisions still open
 
-## Important limitation
+Before or during coding, the team must decide:
 
-The existing website interface, application logic, and several referenced models were not supplied. Requirements concerning screens, attendance, group communication, assessment results, refreshers, and skill data must therefore be documented as assumptions or as new tracking capabilities.
+- which tracked lessons are required, optional, or excluded from Course Progress;
+- whether Course Progress is enabled only for `isTracked` Course Instances;
+- how repeated Course Instances of the same Course are represented in progress and rewards;
+- which roles may create groups, assign challenges, validate contributions, and reverse rewards;
+- whether group communication is built into the LMS or uses an approved external integration;
+- which exam conditions are readiness requirements rather than informational preparation steps;
+- how corrected assessment results, revoked completion, and reward reversals are represented;
+- whether the placeholder Activity Tracker is removed, hidden, or rebuilt from meaningful events.
+
+The existing Activity Tracker must not be treated as trusted gamification data because its current values are random and client-only.
