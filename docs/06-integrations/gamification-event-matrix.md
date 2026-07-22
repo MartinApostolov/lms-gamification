@@ -1,146 +1,140 @@
 # Gamification Event Matrix
 
-> **Document status:** This is a rough integration outline. Event names, payloads, transport, and ownership may change during technical design.
+> **Document status:** Rough integration outline grounded in the full LMS mock-up. Event names, payloads, transport, and ownership remain provisional.
 
 ## 1. Purpose
 
-This matrix shows which meaningful LMS or gamification events may feed progress, milestones, exam readiness, Study Groups, Collaborative Challenges, Post-course Knowledge Refreshers, XP, achievements, and future Skill Profile integration.
+One trusted source occurrence may feed Course Progress, Milestones, Exam Readiness, Study Groups, Collaborative Challenges, Knowledge Refreshers, XP, Achievements, analytics, or future Skill Profile integration. Each consumer decides independently what the occurrence means.
 
-It is intended to prevent:
+The matrix prevents duplicate rewards, hidden coupling, and unsupported assumptions.
 
-- rewarding the same action more than once by accident;
-- allowing one feature to hard-code another feature's reward rules;
-- assuming that data exists when the supplied LMS models do not confirm it;
-- losing correction history when source results change.
+## 2. Event contract
 
-A source feature should publish a trusted event once. Downstream features decide independently whether that event qualifies for progress, XP, an achievement, challenge progress, future skill evidence, or analytics.
+Every reward/evidence-capable event should include:
 
-## 2. Event rules
+- globally unique occurrence ID;
+- event type;
+- learner and actor IDs where applicable;
+- Course, Course Instance, lesson, Assessment, Program, Certificate, group, or challenge IDs where applicable;
+- occurrence and recorded times;
+- source service and trust level;
+- source/rule version;
+- correction/replacement reference;
+- minimum payload needed to re-evaluate the rule.
 
-Every reward-capable or evidence-capable event should include, at minimum:
+All consumers must be idempotent by occurrence ID. Mirrored writes may publish only one logical event.
 
-- a unique event or source-occurrence identifier;
-- learner identifier where applicable;
-- course and course-instance identifiers where applicable;
-- group, challenge, refresher, or assessment identifiers where applicable;
-- event type and occurrence time;
-- trusted source or validating actor;
-- rule or configuration version;
-- correction or replacement relationship when data is changed.
+## 3. Existing LMS and learning events
 
-Processing must be idempotent. Replaying the same source occurrence must not create duplicate progress, contribution, XP, achievements, refresher eligibility, or skill evidence.
-
-## 3. Core learning and course events
-
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Current source | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `LEARNER_ENROLLED` | Existing LMS enrollment | Confirmed as data; event publishing may need implementation | Course Progress, Final Exam Readiness, Study Groups, analytics | Creates learner-course-instance scope; does not award XP by itself. |
-| `REQUIRED_ACTIVITY_COMPLETED` | Existing LMS completion data or future activity service | Lesson completion is confirmed; other activity types are not | Course Progress, Collaborative Challenges, analytics | Must identify the unique required activity. |
-| `REQUIRED_ACTIVITY_COMPLETION_REVOKED` | LMS correction or authorized staff | Requires correction workflow | Course Progress and downstream correction handling | Removes an invalid completion without deleting audit history. |
-| `OPTIONAL_ACTIVITY_COMPLETED` | LMS or exploration feature | Requires optional-activity configuration | Course Progress, Optional Exploration Challenges | Must not affect required progress or exam eligibility unless separately configured. |
-| `OPTIONAL_ACTIVITY_COMPLETION_REVOKED` | LMS correction or authorized staff | Requires correction workflow | Optional progress and downstream correction handling | Recalculates optional and combined progress. |
-| `REQUIRED_PROGRESS_UPDATED` | Course Progress | New feature event | Course Milestones, Final Exam Readiness, analytics | Carries current required value from 0–100. |
-| `OPTIONAL_PROGRESS_UPDATED` | Course Progress | New feature event | Course Milestones, Achievements, exploration analytics | Carries current optional value from 0–100. |
-| `COURSE_COMPLETED` | Existing LMS course-completion source of truth | Course completion is confirmed as data; exact rule requires clarification | Course Milestones, XP, Achievements, Knowledge Refreshers, analytics | Means normal course-completion requirements are satisfied. |
-| `COURSE_COMPLETION_REVOKED` | LMS correction or authorized staff | Requires correction workflow | Milestones, XP, Achievements, Knowledge Refreshers, analytics | May cancel unstarted refresher eligibility and correct rewards. |
+| `LEARNER_ENROLLED` | Course/Seminar Instance enrollment service | Confirmed data; adapter required | Progress scope, Groups, analytics | No XP for enrollment alone. Self-identity hardening is recommended on Course enrollment. |
+| `LESSON_COMPLETED` | Course Instance lesson `completedBy` | Data exists; source not trusted for rewards yet | Course Progress | Harden identity, enrollment, rules, and uniqueness first. |
+| `LESSON_COMPLETION_REVOKED` | New correction workflow | Not implemented | Progress and reward corrections | Preserve original occurrence. |
+| `ASSESSMENT_STARTED` | Assessment result timestamps | Partly available | Analytics, attempt history | Starting alone normally gives no XP. |
+| `ASSESSMENT_COMPLETED` | `Assessment.results.completedAt` / result service | Confirmed | Progress, Challenges, analytics | Identify assessment type and unique attempt. |
+| `ASSESSMENT_PASSED` | Result score compared with stored pass score | Confirmed | Readiness, Milestones, Challenges, XP/Achievements by rule | Keep pass threshold snapshot. |
+| `ASSESSMENT_NOT_PASSED` | Result below pass score | Confirmed | Readiness, feedback, analytics | Should not remove prior valid evidence without correction semantics. |
+| `ASSESSMENT_RESULT_CORRECTED` | Staff result update/import | Result editing exists; event/audit extension required | Readiness, completion, rewards | Reference prior result occurrence. |
+| `EXAM_ENROLLED` | `Assessment.examEnrolledUsers` | Confirmed | Readiness, learner display | Enrollment is access state, not attendance or XP. |
+| `EXAM_WINDOW_OPENED` | Exam schedule adapter | Derivable from confirmed dates | Readiness, notifications | Scheduled state event; no reward. |
+| `EXAM_WINDOW_CLOSED` | Exam schedule adapter | Derivable from confirmed dates | Readiness, notifications | Does not prove attempt/attendance. |
+| `PRACTICAL_SUBMISSION_RECORDED` | Practical submission service | Confirmed | Readiness, Challenge if explicitly configured | Proves a file submission, not quality or pass. Re-upload should replace, not multiply credit. |
+| `PRACTICAL_SUBMISSION_REPLACED` | Practical re-upload | Confirmed behavior; adapter required | Audit, readiness | Normally no extra progress or XP. |
+| `COURSE_COMPLETED` | User service after all Course Instance exams pass | Confirmed business rule; adapter required | Milestones, XP, Achievements, Refreshers, analytics | Logical event should carry Course and source Course Instance. |
+| `COURSE_COMPLETION_REVOKED` | New correction/recalculation workflow | Not implemented | Downstream corrections | Current mirrored arrays do not express revocation history. |
+| `CERTIFICATE_ISSUED` | Administrator certificate service | Confirmed | XP, Achievements, analytics | Strong event; separate from Course completion. |
+| `CERTIFICATE_UPDATED_OR_REISSUED` | Certificate service | Confirmed update behavior; adapter required | Audit, learner display | Do not award the original achievement twice. |
+| `PROGRAM_PROGRESS_UPDATED` | Program calculation | Confirmed derived state | Milestones, analytics | Publish threshold crossing rather than repeated reads. |
+| `PROGRAM_COMPLETED` | Program completion workflow | Confirmed | XP, Achievements, analytics | Idempotent by learner + Program completion occurrence. |
 
-## 4. Milestone and exam events
+## 4. Progress and readiness events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `MILESTONE_REACHED` | Course Milestones | New feature event | XP, Achievements, analytics | Payload identifies milestone type. |
-| `EXAM_READINESS_UPDATED` | Final Exam Readiness | New feature event | Learner display, analytics, optional notification integration | Carries readiness status and completed or remaining requirements. |
-| `EXAM_READY` | Final Exam Readiness | New feature event; depends on configured readiness data | Course Milestones, XP, Achievements, notification integration | Generated once when all active required readiness conditions are satisfied. |
-| `EXAM_READY_REVOKED` | Final Exam Readiness correction | New feature event | XP, Achievements, notification integration | Used when corrected data means the learner is no longer ready. |
-| `EXAM_REGISTRATION_AVAILABLE` | Exam or scheduling service | Not confirmed | Notification integration, learner display | Availability itself normally does not award XP. |
-| `EXAM_ATTENDANCE_CONFIRMED` | Exam or attendance source | Not confirmed | Final Exam Readiness, Course Milestones, XP, Achievements, analytics | Must not be inferred from enrollment or the exam date passing. |
-| `EXAM_COMPLETED` | Exam or assessment source | Not confirmed | Final Exam Readiness, Course Milestones, XP, Achievements, analytics | Completion and passing should remain distinct if tracked. |
+| `REQUIRED_PROGRESS_UPDATED` | Course Progress | New | Milestones, Readiness, analytics | Carries 0–100 and requirement version. |
+| `OPTIONAL_PROGRESS_UPDATED` | Course Progress | New | Achievements, exploration analytics | Does not complete the Course. |
+| `COURSE_PROGRESS_RECALCULATED` | Course Progress | New | Learner display, audit | May increase or decrease after correction. |
+| `MILESTONE_REACHED` | Course Milestones | New | XP, Achievements, analytics | One event per milestone/version. |
+| `MILESTONE_REVOKED` | Course Milestones | New | Reward corrections | Used after source correction. |
+| `EXAM_READINESS_UPDATED` | Final Exam Readiness | New | Learner display, analytics | Carries checklist counts and next action. |
+| `EXAM_READY` | Final Exam Readiness | New | Milestones, XP/Achievements by rule, notification adapter | Means configured readiness only. |
+| `EXAM_READY_REVOKED` | Final Exam Readiness | New | Corrections, notifications | Auditable correction. |
+| `EXAM_ATTENDANCE_CONFIRMED` | Future attendance source | Unavailable | Milestones, analytics | Must not be inferred from enrollment/window/result. |
 
 ## 5. Study Group events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `STUDY_GROUP_CREATED` | Study Groups | Requires new group feature | Administration and analytics | Creation does not award XP. |
-| `STUDY_GROUP_MEMBERSHIP_CHANGED` | Study Groups | Requires new group feature | Access control, Collaborative Challenges, analytics | Joining, remaining, or leaving does not award XP. |
-| `STUDY_GROUP_ROLE_CHANGED` | Study Groups | Requires new group feature | Access control and audit | A role change does not prove learning contribution. |
-| `STUDY_GROUP_ARCHIVED` | Study Groups | Requires new group feature | Access control, challenge administration | Archived groups are normally read-only. |
+| `STUDY_GROUP_CREATED` | Study Groups | New | Administration, analytics | No reward. |
+| `STUDY_GROUP_MEMBERSHIP_CHANGED` | Study Groups | New | Access control, Challenges, analytics | Joining/leaving gives no XP. |
+| `STUDY_GROUP_ROLE_CHANGED` | Study Groups | New | Access control, audit | No reward. |
+| `STUDY_GROUP_ARCHIVED` | Study Groups | New | Access control, challenge administration | Normally read-only afterward. |
+| `STUDY_GROUP_MODERATION_ACTION_RECORDED` | Study Groups | New | Safety/audit | Never a learner reward source. |
 
 ## 6. Collaborative Challenge events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `COLLABORATIVE_CHALLENGE_ASSIGNED` | Collaborative Challenges | Requires new challenge feature | Group display and analytics | Assignment does not award XP. |
-| `COLLABORATIVE_CHALLENGE_STARTED` | Collaborative Challenges | Requires new challenge feature | Group display and analytics | Records availability or accepted participation. |
-| `COLLABORATIVE_CONTRIBUTION_CONFIRMED` | Collaborative Challenges | Requires new challenge feature | Challenge progress, XP, Achievements, optional Skill Profile integration | Must identify the learner's verified contribution and source occurrence. |
-| `COLLABORATIVE_CHALLENGE_PROGRESS_UPDATED` | Collaborative Challenges | Requires new challenge feature | Group display and analytics | Carries shared progress and remaining requirements. |
-| `COLLABORATIVE_CHALLENGE_COMPLETED` | Collaborative Challenges | Requires new challenge feature | XP, Achievements, analytics | Group completion and individual reward eligibility remain separate. |
-| `COLLABORATIVE_CONTRIBUTION_REVOKED` | Challenge correction | Requires new challenge feature | Challenge progress, XP and Achievement corrections, optional Skill Profile correction | Identifies the original contribution occurrence. |
-| `COLLABORATIVE_CHALLENGE_CANCELLED` | Collaborative Challenges | Requires new challenge feature | Group display, analytics, reward prevention | Cancellation must include a reason and must not appear as learner failure. |
+| `COLLABORATIVE_CHALLENGE_ASSIGNED` | Collaborative Challenges | New | Group display, analytics | No reward for assignment/joining. |
+| `COLLABORATIVE_CHALLENGE_STARTED` | Collaborative Challenges | New | Display, analytics | Records availability. |
+| `COLLABORATIVE_CONTRIBUTION_CONFIRMED` | Collaborative Challenges | New | Progress, XP, Achievements, future skills | Must identify validator/source and unique contribution. |
+| `COLLABORATIVE_CONTRIBUTION_REVOKED` | Challenge correction | New | Progress and reward corrections | Reference original contribution. |
+| `COLLABORATIVE_CHALLENGE_PROGRESS_UPDATED` | Collaborative Challenges | New | Group display, analytics | Shared progress only. |
+| `COLLABORATIVE_CHALLENGE_COMPLETED` | Collaborative Challenges | New | XP/Achievements by rule, analytics | Team completion and personal eligibility remain separate. |
+| `COLLABORATIVE_CHALLENGE_CANCELLED` | Collaborative Challenges | New | Display, reward prevention, analytics | Show cancellation, not learner failure. |
 
 ## 7. Post-course Knowledge Refresher events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `KNOWLEDGE_REFRESHER_ELIGIBLE` | Post-course Knowledge Refreshers | Requires new refresher feature | Learner display and optional notification integration | Created after trusted course completion and configured delay. |
-| `KNOWLEDGE_REFRESHER_STARTED` | Post-course Knowledge Refreshers | Requires new refresher feature | Attempt history and analytics | Starting alone normally does not award XP. |
-| `KNOWLEDGE_REFRESHER_COMPLETED` | Post-course Knowledge Refreshers | Requires new refresher feature | XP, Achievements, analytics, optional Skill Profile integration | Carries result summary and definition version. |
-| `KNOWLEDGE_REFRESHER_REVIEW_RECOMMENDED` | Post-course Knowledge Refreshers | Requires topic-level evaluation | Learner display, review-link recommendations | Must not revoke course completion. |
-| `KNOWLEDGE_REFRESHER_RESULT_CORRECTED` | Refresher correction | Requires new refresher feature | XP and Achievement corrections, optional Skill Profile correction | Preserves the original result in audit history. |
+| `KNOWLEDGE_REFRESHER_ELIGIBLE` | Knowledge Refreshers | New | Learner display, notifications | Based on trusted Course completion and delay. |
+| `KNOWLEDGE_REFRESHER_STARTED` | Knowledge Refreshers | New | Attempt history, analytics | No reward for starting. |
+| `KNOWLEDGE_REFRESHER_COMPLETED` | Knowledge Refreshers | New | XP, Achievements, analytics, future skills | Assessment engine concepts may be reused, but this is a separate feature/version. |
+| `KNOWLEDGE_REFRESHER_REVIEW_RECOMMENDED` | Knowledge Refreshers | New | Learner display | Topic-level result and Course-material links required. |
+| `KNOWLEDGE_REFRESHER_RESULT_CORRECTED` | Refresher correction | New | Reward/skill corrections | Preserve original result. |
 
-## 8. Optional and competitive challenge events
+## 8. Optional and competitive events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `EXPLORATION_CHALLENGE_COMPLETED` | Optional Exploration Challenges | Requires new challenge feature | Optional progress, XP, Achievements | Must not affect required course completion. |
-| `EXPLORATION_CHALLENGE_COMPLETION_REVOKED` | Exploration correction | Requires new challenge feature | Optional progress and reward corrections | Recalculates optional progress and downstream rewards. |
-| `COMPETITIVE_CHALLENGE_COMPLETED` | Opt-in Competitive Challenges | Requires new competitive feature | XP, Achievements, analytics | Participation must be opt-in. |
-| `COMPETITIVE_POSITION_CONFIRMED` | Opt-in Competitive Challenges | Requires new competitive feature | Achievements and optional XP | Generated only after scores and ties are finalized. |
-| `PERSONAL_BEST_IMPROVED` | Opt-in Competitive Challenges | Requires new competitive feature | XP, Achievements, analytics | Supports comparison against the learner's own result. |
-| `COMPETITIVE_RESULT_REVOKED` | Competitive correction | Requires new competitive feature | XP and Achievement corrections | Used after invalid score or ranking correction. |
+| `EXPLORATION_CHALLENGE_COMPLETED` | Optional Exploration Challenges | Later/new | Optional progress, XP, Achievements | Never required Course progress unless separately configured. |
+| `EXPLORATION_CHALLENGE_COMPLETION_REVOKED` | Exploration correction | Later/new | Corrections | Recalculate optional progress. |
+| `COMPETITIVE_CHALLENGE_COMPLETED` | Opt-in Competitive Challenges | Later/new | XP, Achievements, analytics | Participation is opt-in. |
+| `COMPETITIVE_POSITION_CONFIRMED` | Competitive Challenges | Later/new | Achievements, optional XP | Only after finalized score/ties. |
+| `PERSONAL_BEST_IMPROVED` | Competitive Challenges | Later/new | XP, Achievements, analytics | Supports self-comparison. |
+| `COMPETITIVE_RESULT_REVOKED` | Competitive correction | Later/new | Reward corrections | Auditable invalidation. |
 
 ## 9. Reward events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
+| Proposed event | Owner | Availability | Main consumers | Notes |
 |---|---|---|---|---|
-| `XP_AWARDED` | Meaningful XP and Levels | New feature event | Learner XP display, analytics | Created from a trusted source event and XP rule; does not feed course progress. |
-| `XP_REVERSED` | Meaningful XP and Levels | New feature event | Learner XP display, analytics | Reversing transaction preserves the original award. |
-| `LEVEL_REACHED` | Meaningful XP and Levels | New feature event | Achievements and learner display | Does not grant academic credit or exam eligibility. |
-| `ACHIEVEMENT_AWARDED` | Achievements and Badges | New feature event | Learner display and analytics | A badge should not automatically add duplicate XP for the same source event. |
-| `ACHIEVEMENT_REVOKED` | Achievements and Badges | New feature event | Learner display and analytics | Revocation remains auditable. |
+| `XP_AWARDED` | XP and Levels | New | Learner display, analytics | References one trusted source occurrence and rule version. |
+| `XP_REVERSED` | XP and Levels | New | Learner display, analytics | Reversal transaction preserves original award. |
+| `LEVEL_REACHED` | XP and Levels | New | Achievements, display | No academic credit. |
+| `ACHIEVEMENT_AWARDED` | Achievements | New | Learner display, analytics | Must not duplicate XP for same source by accident. |
+| `ACHIEVEMENT_REVOKED` | Achievements | New | Learner display, analytics | Auditable. |
 
-## 10. Future Skill Profile integration events
+## 10. Explicit non-events
 
-| Proposed event | Owner or source | Current availability | Main consumers | Notes |
-|---|---|---|---|---|
-| `SKILL_EVIDENCE_AVAILABLE` | Challenge, refresher, or assessment adapter | Future integration | Skill Profile | Must distinguish practice, completion, assessment, and verified mastery. |
-| `SKILL_EVIDENCE_REVOKED` | Source correction adapter | Future integration | Skill Profile | Identifies the original evidence occurrence. |
-| `COURSE_RECOMMENDATION_AVAILABLE` | Future recommendation service | Future integration | Learner display | Should include an understandable reason. |
+The following must not generate reward-capable learning events by themselves:
 
-These events do not imply that a Skill Profile is implemented in the current project.
+- login or token refresh;
+- opening a page or lesson;
+- remaining online;
+- payment or discount use;
+- Course/Exam enrollment alone;
+- joining or messaging in a Study Group;
+- the random client-side Activity Tracker value;
+- exam date passing;
+- unverified message/reaction counts.
 
-## 11. Initial source availability summary
+## 11. Initial integration order
 
-### Available or partly available from the supplied LMS models
-
-- learner enrollment in courses and course instances;
-- completed course lessons;
-- course-completion records;
-- course and course-instance type, including live and self-paced delivery;
-- programs and certificates.
-
-These records may still require a new event-publishing or change-detection layer.
-
-### Not confirmed and requiring new tracking or integration
-
-- required versus optional activity configuration;
-- final-exam eligibility, registration, attendance, completion, and passing;
-- live-session attendance;
-- Study Groups, membership, roles, and group communication;
-- Collaborative Challenge definitions, contributions, and results;
-- Post-course Knowledge Refresher definitions, schedules, attempts, and results;
-- detailed assessment outcomes;
-- skill taxonomy, mastery, and recommendation data.
-
-## 12. Implementation boundary
-
-The event matrix does not define exact payload schemas, queues, APIs, database models, XP amounts, badge conditions, question formats, or skill calculations. Those decisions belong to technical design if implementation is approved.
+1. Harden and normalize lesson completion.
+2. Add a durable source-event/outbox adapter.
+3. Publish assessment pass, practical submission, Course completion, Certificate, and Program events.
+4. Implement Course Progress and Readiness consumers.
+5. Add Study Group/Challenge source events.
+6. Add XP/Achievement consumers with reversal support.
+7. Add Refresher and later challenge events.
