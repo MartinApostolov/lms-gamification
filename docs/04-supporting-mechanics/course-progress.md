@@ -1,12 +1,12 @@
 # Course Progress
 
-> **Document status:** This is a rough functional outline. Names, thresholds, rewards, interface details, and technical structures are provisional. See [Document Status and Theming](../02-planning-and-standards/document-status-and-theming.md).
+> **Document status:** Rough functional outline grounded in the supplied LMS mock-up. Names, thresholds, rewards, interface details, and technical structures remain provisional.
 
 ## 1. What
 
-Course Progress shows each learner how much of a particular course delivery they have completed and what meaningful activity they should complete next.
+Course Progress shows how much meaningful work a learner has completed in a particular Course Instance and identifies the next useful action.
 
-Progress belongs to a learner's enrollment in a specific course instance:
+Progress belongs to:
 
 ```text
 User + CourseInstance
@@ -14,85 +14,68 @@ User + CourseInstance
 
 The learner view should show:
 
-- required course progress from 0% to 100%;
-- optional activity progress from 0% to 100%;
-- combined progress from 0 to 200 points;
+- required progress from 0% to 100%;
+- optional progress from 0% to 100% when optional activities exist;
+- combined progress from 0 to 200 points when both values are shown;
 - completed and remaining activities;
-- the next recommended activity;
-- whether the required course work is complete.
+- the next recommended action;
+- the separate existing academic Course-completion state.
 
-Example:
+The combined value is not “200% Course completion.” Optional work never blocks normal completion.
 
-```text
-Required progress: 75 / 100
-Optional progress: 40 / 100
-Total progress: 115 / 200
+## 2. Current LMS grounding
 
-Next required activity: Complete Lesson 10
-```
+### Confirmed current source
 
-The combined value is shown as points out of 200, not as “200% course completion.” The learner completes the course requirements when the required part reaches 100%, subject to the LMS course-completion rules. Optional progress does not block completion.
+A Course Instance may have `isTracked: true`. Its copied curriculum lessons contain `completedBy` entries with learner and timestamp. The Course Details frontend uses this data to show completed lessons and the next incomplete lesson.
 
-Authorized lecturers and course managers should be able to view progress for learners in their course instances. Administrators should be able to audit progress calculations and configure system defaults.
+### Separate academic completion rule
 
-## 2. Why
+The current LMS records successful Course completion only after the learner has a passing result for every exam attached to the Course Instance. Lesson progress must not overwrite, simulate, or contradict that record.
 
-The main business problem is the large drop-off between enrollment and final-exam participation. Learners may stop participating because the end goal feels distant, completed work is not visible, or the next step is unclear.
+### Missing classification
 
-Course Progress breaks the course into understandable amounts of work and makes the next action visible without encouraging unnecessary website use.
+The current schema does not identify a lesson as required or optional. The gamification extension must add configuration rather than infer importance from order, content type, or whether an assessment is attached.
 
-The feature supports the goals of:
+## 3. Why
 
-- increasing the number of enrolled learners who start the course;
-- retaining more learners through the middle and later course stages;
-- helping learners recover after falling behind;
-- supporting preparation for the final exam;
-- increasing course completion.
+Visible progress and a clear next step can reduce abandonment between enrollment and the final exam without encouraging extra website use. The feature should help learners:
 
-## 3. How
+- begin the Course;
+- understand their current stage;
+- recover after falling behind;
+- prepare for exams;
+- complete required learning work;
+- optionally explore additional material.
 
-### 3.1 Required progress
+## 4. Calculation
 
-Required progress represents activities that are necessary for normal course completion.
+### 4.1 Required progress
 
-For the initial implementation, progress can be calculated from required lesson completion:
+For the initial implementation:
 
 ```text
-Unique required lessons completed
---------------------------------- × 100
-Total required lessons
+Unique required activities completed
+------------------------------------ × 100
+Total active required activities
 ```
 
-Example:
+Tracked lessons are the first supported activity type after the completion source is hardened. Assessment or challenge activities may be added only when their own source is trusted and explicitly configured as required.
 
-```text
-9 completed required lessons / 12 required lessons = 75%
-```
-
-Only meaningful, completed activities may increase progress. Opening a lesson, logging in, remaining online, or repeatedly viewing completed content must not increase it.
-
-### 3.2 Optional progress
-
-Optional progress represents additional course-related activities that are not necessary for normal completion or final-exam eligibility unless explicitly configured otherwise.
-
-It is calculated separately:
+### 4.2 Optional progress
 
 ```text
 Unique optional activities completed
 ------------------------------------ × 100
-Total optional activities
+Total active optional activities
 ```
 
-Optional activities may include extra practice, additional resources, alternative exercises, or exploration challenges.
+Optional activities may include extra practice, exploration, or approved Collaborative Challenges. When none exist, optional and combined values may be hidden.
 
-When a course has no optional activities, the optional value and combined total may be hidden rather than displayed as 0 / 100.
-
-### 3.3 Combined progress
-
-The combined value is the sum of the required and optional percentages expressed as points:
+### 4.3 Combined progress
 
 ```text
-Required progress points + Optional progress points = Total points out of 200
+Required percentage points + Optional percentage points
 ```
 
 Example:
@@ -103,194 +86,160 @@ Optional: 40 / 100
 Total:    115 / 200
 ```
 
-The combined value provides an additional goal for learners who want to complete everything. It must not replace the required course-completion value.
+### 4.4 De-duplication
 
-### 3.4 Next recommended activity
-
-The system should show at least one meaningful next action whenever possible.
-
-Priority should normally be:
-
-1. incomplete required activities;
-2. time-sensitive required activities;
-3. final-exam readiness requirements;
-4. optional activities.
-
-Examples:
+A completion counts once per configured requirement and learner. Existing lesson completion arrays must be normalized by:
 
 ```text
-Next required activity: Complete Lesson 10
+CourseInstance + lesson + learner
 ```
 
-```text
-All required activities are complete.
-Optional activity: Try the advanced practice task.
-```
+Multiple embedded completion rows for that identity still count as one completed lesson.
 
-### 3.5 Recalculation
+## 5. Next recommended action
 
-Progress must be recalculated when relevant LMS data or course requirements change.
+Normal priority:
 
-Examples include:
+1. available incomplete required activity;
+2. time-sensitive required activity;
+3. incomplete Final Exam Readiness condition;
+4. optional activity;
+5. completed-state guidance such as exam details or refresher availability.
 
-- a lesson is completed;
-- an incorrect completion is removed;
-- a lesson changes between required and optional;
-- a required activity is added or removed;
-- a learner changes course instance.
+The action should deep-link to the existing Course Details lesson, assessment, exam, Study Group, or Challenge where possible.
 
-Course Progress may publish proposed events such as:
+## 6. Recalculation and events
+
+Recalculate when:
+
+- a trusted completion is added, corrected, or revoked;
+- an activity changes required/optional status;
+- a requirement becomes active/inactive;
+- Course curriculum or Course Instance scope changes;
+- a learner's enrollment changes.
+
+Proposed events:
 
 - `REQUIRED_PROGRESS_UPDATED`;
 - `OPTIONAL_PROGRESS_UPDATED`;
 - `COURSE_PROGRESS_RECALCULATED`.
 
-The existing LMS or another configured source remains authoritative for the underlying activity completion and final course-completion record.
+The underlying LMS completion/result remains authoritative. A progress summary may cache a calculated display value.
 
-The LMS completion records remain the source of truth. A gamification progress record may cache the calculated result for display and reporting.
+## 7. Integration safety requirement
 
-## 4. Motivation types supported
+Before lesson completion can produce reward-capable events, the backend must:
 
-- **Achievers — strong:** clear required progress, visible completion, and a total goal of 200 points.
-- **Explorers — strong:** optional progress recognizes additional learning without making it mandatory.
-- **Socializers — low:** this feature does not directly reward communication.
-- **Competitors — low:** progress is personal by default and is not publicly ranked.
+- derive self-service learner identity from the authenticated token;
+- verify Course Instance enrollment;
+- enforce the completion rule server-side;
+- prevent more than one completion identity per learner and lesson;
+- return idempotently on replay;
+- record authorized corrections and their actor/reason.
 
-## 5. Live-course behavior
+Until then, existing `completedBy` data may be used for a de-duplicated mock-up progress display but not as direct XP evidence.
 
-For live courses, progress should follow meaningful course requirements rather than daily website activity.
+## 8. Live-course behavior
 
-- Scheduled lesson dates do not automatically prove attendance or completion.
-- A learner is not penalized for not visiting the LMS between scheduled lessons.
-- Cancelled lessons should not count against the learner.
-- Rescheduled lessons should use the updated schedule.
-- Late-enrolling learners should see missed and remaining requirements without receiving automatic completion for earlier lessons.
-- Attendance may affect progress only when reliable attendance data exists.
+- Scheduled dates do not prove attendance or lesson completion.
+- No penalty is applied for not visiting the LMS between live sessions.
+- Cancelled/rescheduled activities use corrected requirements and dates.
+- Late enrollment shows remaining and recoverable requirements without granting earlier credit.
+- Attendance contributes only when a reliable future attendance source exists.
 
-## 6. Self-paced-course behavior
+## 9. Self-paced behavior
 
-For self-paced courses:
+- Progress depends on completed requirements, not calendar activity.
+- Several activities may be completed in one session.
+- Inactivity does not reduce earned progress.
+- Reopening content does not add progress.
+- Deadlines apply only when explicitly configured.
 
-- progress is based on completed required and optional activities;
-- the learner may complete several activities in one session;
-- inactivity does not reduce completed progress;
-- reopening completed content does not create more progress;
-- fixed calendar activity is not required unless the course explicitly defines deadlines.
+## 10. Rules and edge cases
 
-## 7. Rules and edge cases
+- Required and optional values remain between 0 and 100.
+- Combined points remain between 0 and 200.
+- Optional activity cannot satisfy a required condition unless it is independently configured as an alternative.
+- A Course Instance has separate progress from another instance.
+- The existing Course-template completion record may already be present from another instance; the UI must distinguish “Course already completed” from progress in the current instance.
+- Corrections may reduce progress and must be auditable.
+- Material requirement changes must define whether they affect already completed learners.
+- Detailed progress is private to the learner and authorized staff.
 
-- Each activity may contribute only once to the relevant progress value.
-- Required and optional progress must each remain between 0 and 100.
-- Total progress must remain between 0 and 200.
-- Optional completion must not increase required progress.
-- Progress from one course instance must not automatically transfer to another instance.
-- A correction may reduce the current displayed progress, and the correction must be auditable.
-- Significant course changes should not silently make already-completed learners incomplete unless an administrator explicitly allows it.
-- Detailed learner progress is private by default and visible only to the learner and authorized staff.
-
-## 8. Acceptance criteria
+## 11. Acceptance criteria
 
 ### AC1 — Initial progress
 
-Given a learner is enrolled in a course instance and has completed no activities,
+Given an enrolled learner has no trusted completion,
 when progress is calculated,
 then required progress is 0%
-and the first required activity is shown as the next action.
+and the first available required action is shown.
 
-### AC2 — Required progress calculation
+### AC2 — Unique lesson calculation
 
-Given a course has 12 required lessons
-and the learner has completed 9 unique required lessons,
+Given 12 required lessons
+and completion data contains 9 distinct completed lessons for the learner,
 when progress is calculated,
-then required progress is 75%.
+then required progress is 75%, even if one lesson contains duplicate completion rows.
 
-### AC3 — Optional progress calculation
-
-Given a course has 10 optional activities
-and the learner has completed 4 unique optional activities,
-when progress is calculated,
-then optional progress is 40%.
-
-### AC4 — Combined progress
-
-Given required progress is 75%
-and optional progress is 40%,
-when total progress is displayed,
-then the system shows 115 / 200 points.
-
-### AC5 — Optional work does not complete the course
+### AC3 — Optional separation
 
 Given required progress is 80%
 and optional progress is 100%,
 when progress is evaluated,
-then the learner is not marked complete based only on the combined 180 / 200 points.
+then optional completion does not mark the required work complete.
 
-### AC6 — Duplicate completion
+### AC4 — Academic completion separation
 
-Given an activity is already recorded as complete,
-when the same completion event is processed again,
-then neither required nor optional progress increases.
+Given required lesson progress reaches 100%
+but one attached exam is not passed,
+when the learner view is displayed,
+then learning progress may show 100%
+but the existing successful-Course state is not fabricated.
 
-### AC7 — Corrected source data
+### AC5 — Idempotent source event
 
-Given a required lesson was marked complete incorrectly,
-when an authorized correction removes the completion,
-then required and total progress are recalculated
-and the correction is recorded for auditing.
+Given a lesson completion occurrence was already processed,
+when the same occurrence is replayed,
+then progress, XP, and milestones do not increase.
 
-### AC8 — Separate course instance
+### AC6 — Separate Course Instance
 
-Given a learner completed an earlier instance of a course,
-when the learner enrolls in a new instance,
-then the new enrollment starts with separate progress unless an explicit transfer rule is applied.
+Given the learner completed another instance of the same Course,
+when viewing the new instance,
+then its instance progress is separate
+and the prior Course-level completion is displayed as contextual information only.
 
-## 9. Required LMS data
+## 12. Data and model extensions
 
-### Confirmed from the supplied models
+### Existing data
 
-- learner enrollment in a course instance;
-- live or self-paced course type;
-- lesson completion with user and timestamp;
-- successful course completion.
+- User and Course Instance enrollment;
+- `isLive` and `isTracked`;
+- lesson `completedBy` learner/timestamp data;
+- Assessment results;
+- successful Course record.
 
-### Missing or requiring confirmation
+### New data
 
-- which lessons are required or optional;
-- non-lesson activity completion;
-- assignment and assessment results;
-- attendance data;
-- the exact LMS rule for successful course completion.
+#### `ProgressRequirement`
 
-## 10. Model extensions
+Stores Course Instance, source activity type/ID, required-or-optional classification, order, availability, alternative rules, and version.
 
-The supplied LMS models should not be modified.
+#### `CourseProgressSummary`
 
-A small extension may include:
+Caches learner, Course Instance, required/optional values, next action, calculation version, and time.
 
-### `ProgressRequirement`
+#### Trusted completion adapter
 
-Defines whether an existing lesson or another activity is required or optional and its display order.
+Normalizes existing source data into unique, correctable occurrence IDs.
 
-### `CourseProgressSummary`
+## 13. Success measures
 
-Stores or caches the learner's required progress, optional progress, total points, next activity, calculation time, user, and course instance.
-
-Existing LMS completion records remain the source of truth.
-
-## 11. Success measure
-
-The feature should be evaluated through:
-
-- percentage of enrolled learners who begin the course;
-- percentage reaching 25%, 50%, 75%, and 100% required progress;
-- percentage participating in optional learning activities;
-- change in final-exam participation;
-- change in successful course completion;
-- the course stage with the largest learner drop-off.
-
-## Related features
-
-- [Course Milestones](course-milestones.md) recognizes important points calculated from course progress.
-- [Final Exam Readiness](final-exam-readiness.md) tracks the requirements that must be completed before the final exam.
-
-See [Gamification Event Matrix](../06-integrations/gamification-event-matrix.md) for proposed event ownership and integrations.
+- enrolled learners beginning meaningful work;
+- reach rates at 25%, 50%, 75%, and 100% required progress;
+- final-exam enrollment/participation/completion conversion;
+- successful Course completion;
+- optional activity participation;
+- stage with greatest drop-off;
+- frequency of source corrections or duplicate-event rejection.
