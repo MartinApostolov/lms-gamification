@@ -1,6 +1,6 @@
 # MVP Prioritization
 
-> **Document status:** This is a rough release-planning outline revised after stakeholder review. Priorities may change after the LMS mock, technical discovery, implementation time, and available source data are confirmed.
+> **Document status:** This is a rough release-planning outline revised after stakeholder review and grounded in the supplied full LMS mock-up. Priorities may still change during implementation because of available time, integration constraints, and stakeholder decisions.
 
 ## 1. Prioritization goal
 
@@ -17,14 +17,15 @@ Priority is based on:
 
 The active focus is Study Groups and Collaborative Challenges. Post-course Knowledge Refreshers are the recommended extension.
 
-See [Stakeholder Feedback and Scope Revision](../01-project-context/stakeholder-feedback-and-scope-revision.md).
+See [Stakeholder Feedback and Scope Revision](../01-project-context/stakeholder-feedback-and-scope-revision.md) and [Mock-up Requirements Impact Review](mockup-requirements-impact-review.md).
 
 ## 2. Tier 0 — Required technical foundation
 
 This is not a separate learner-facing feature, but it is required before group activity and rewards are reliable.
 
+- secure and de-duplicate lesson completion before it becomes reward-capable;
 - course-instance-based learner scope;
-- permission checks;
+- permission checks and explicit gamification permissions;
 - configuration and rule versioning;
 - unique source-occurrence identifiers;
 - idempotent event processing;
@@ -36,6 +37,16 @@ This is not a separate learner-facing feature, but it is required before group a
 Without this foundation, challenge contribution, XP, achievements, and results may be duplicated or become impossible to correct safely.
 
 ## 3. Tier 1 — Demonstrable MVP
+
+### Course Progress integration
+
+Initial scope:
+
+- enable progress for one tracked Course Instance;
+- calculate progress from unique trusted lesson completions;
+- distinguish required, optional, and excluded lessons through new configuration;
+- show progress and the next meaningful action in Course Details;
+- keep progress separate from the LMS rule that records successful Course completion after all attached exams are passed.
 
 ### Study Groups
 
@@ -76,17 +87,31 @@ Initial scope:
 
 The MVP should support this end-to-end scenario:
 
-1. an enrolled learner joins or is assigned to a Study Group;
-2. the group receives a Collaborative Challenge;
-3. members complete different verified contributions;
-4. group and individual progress update;
-5. one member who did not meet the minimum is not given the same personal reward automatically;
-6. the group completes the challenge;
-7. eligible learners receive the configured XP or achievement once.
+1. an enrolled learner views progress for a tracked Course Instance;
+2. the learner joins or is assigned to a Study Group;
+3. the group receives a Collaborative Challenge;
+4. members complete different verified contributions;
+5. group and individual progress update;
+6. one member who did not meet the minimum is not given the same personal reward automatically;
+7. the group completes the challenge;
+8. eligible learners receive the configured XP or achievement once;
+9. the result appears in Course Details or Profile.
 
-## 4. Tier 2 — Improved cooperative experience
+## 4. Tier 2 — Exam journey and improved cooperative experience
 
-Possible additions:
+Initial exam-journey scope may use confirmed mock-up data for:
+
+- exam existence and type;
+- learner enrollment;
+- exam window and instructions;
+- quiz results;
+- practical submissions and results;
+- pass/fail status;
+- Certificate issuance after successful completion.
+
+Final Exam Readiness still needs its own configurable checklist and must not infer attendance from enrollment, submission, or the exam date passing.
+
+Possible cooperative additions:
 
 - multiple active and completed challenges;
 - temporary challenge teams;
@@ -97,7 +122,7 @@ Possible additions:
 - richer staff configuration;
 - improved moderation and reporting;
 - group-level achievements;
-- optional integration with Course Progress, Course Milestones, and Final Exam Readiness.
+- notification integration for time-sensitive exam information.
 
 These additions should follow the complete Tier 1 flow rather than replace it.
 
@@ -172,15 +197,16 @@ Study Group communication may still be used to coordinate a defined learning act
 
 ## 9. Suggested implementation sequence
 
-1. Event, audit, permissions, and configuration foundation.
-2. Basic Study Group model and learner view.
-3. Study Group membership flow.
-4. Collaborative Challenge definition and assignment.
-5. Individual contribution and shared progress.
-6. Completion, minimum-contribution eligibility, and corrections.
-7. Limited XP and Achievement integration.
-8. Post-course Knowledge Refresher definition and eligibility.
-9. Refresher attempt, feedback, and review links.
-10. Optional Exploration or Opt-in Competitive variant only if time remains.
+1. Secure lesson completion and define trusted event, audit, permission, correction, and configuration foundations.
+2. Add Course Progress for one tracked Course Instance.
+3. Add a basic Study Group model and learner view.
+4. Implement one Study Group membership path.
+5. Add a Collaborative Challenge definition and assignment.
+6. Add individual contribution and shared progress.
+7. Add completion, minimum-contribution eligibility, and corrections.
+8. Integrate limited XP and one Achievement.
+9. Add Final Exam Readiness from confirmed exam data.
+10. Add Post-course Knowledge Refresher definition, eligibility, attempt, feedback, and review links.
+11. Add an Optional Exploration or Opt-in Competitive variant only if time remains.
 
-The implementation should remain modular so Study Groups, Collaborative Challenges, rewards, and refreshers can be selected independently during later integration.
+The implementation should remain modular so Study Groups, Collaborative Challenges, rewards, exam readiness, and refreshers can be selected independently during later integration.
