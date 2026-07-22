@@ -4,8 +4,9 @@ The business requirements are grouped by purpose so the repository is easier to 
 
 ## 01 — Project context
 
-- [Source Note](01-project-context/source-note.md) — evidence supplied for the assignment.
-- [Current LMS Map](01-project-context/current-lms.md) — confirmed LMS models, capabilities, and data gaps.
+- [Source Note](01-project-context/source-note.md) — evidence reviewed for the assignment and confidence conventions.
+- [Current LMS Map](01-project-context/current-lms.md) — concise current-state summary and entry point to the detailed maps.
+- [Detailed Current LMS Maps](01-project-context/current-lms/README.md) — entity relationships, workflows, roles, routes, and gamification integration evidence.
 - [Purpose and Goals](01-project-context/purpose-and-goals.md) — business problem, goals, non-goals, and success measures.
 - [Player Motivations](01-project-context/player-motivations.md) — Achievers, Socializers, Explorers, and Competitors.
 - [Stakeholder Feedback and Scope Revision](01-project-context/stakeholder-feedback-and-scope-revision.md) — reasons for the revised focus and removed features.
@@ -17,6 +18,7 @@ The business requirements are grouped by purpose so the repository is easier to 
 - [Requirements Template](02-planning-and-standards/requirements-template.md) — standard structure for feature requirements.
 - [Document Status and Theming](02-planning-and-standards/document-status-and-theming.md) — distinction between functional requirements and presentation themes.
 - [Consistency Review](02-planning-and-standards/consistency-review.md) — terminology, boundaries, dependencies, and remaining decisions.
+- [Mock-up Requirements Impact Review](02-planning-and-standards/mockup-requirements-impact-review.md) — changes and clarifications produced by reviewing the full LMS mock-up.
 
 ## 03 — Primary features
 
@@ -40,5 +42,5 @@ The business requirements are grouped by purpose so the repository is easier to 
 
 ## 06 — Integrations
 
-- [Gamification Event Matrix](06-integrations/gamification-event-matrix.md) — event ownership, consumers, duplicate prevention, and correction flow.
+- [Gamification Event Matrix](06-integrations/gamification-event-matrix.md) — event ownership, current source availability, duplicate prevention, and correction flow.
 - [Future Skill Profile Integration](06-integrations/future-skill-profile-integration.md) — future skill evidence, recommendations, and adaptive-path boundaries.
