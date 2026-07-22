@@ -1,280 +1,253 @@
 # Final Exam Readiness
 
-> **Document status:** This is a rough functional outline. Names, thresholds, rewards, interface details, and technical structures are provisional. See [Document Status and Theming](../02-planning-and-standards/document-status-and-theming.md).
+> **Document status:** Rough functional outline grounded in the supplied LMS mock-up. Names, statuses, requirements, and technical structures remain provisional.
 
 ## 1. What
 
-Final Exam Readiness shows whether a learner has completed the configured requirements needed to proceed to the final exam for a particular course instance.
+Final Exam Readiness shows whether a learner has completed the configured conditions needed to proceed to the final exam for a Course Instance.
 
-The feature provides:
+The learner view provides:
 
-- a clear readiness status;
-- a checklist of required exam conditions;
-- optional preparation activities shown separately;
-- the remaining action needed before the learner is ready;
-- confirmed exam attendance or completion when those events are available.
+- readiness status;
+- required-condition checklist;
+- optional preparation shown separately;
+- the next missing action;
+- actual exam enrollment and access-window information;
+- known submission/result/pass state;
+- attendance only when a future trusted source exists.
 
-Example:
+“Ready” means all configured readiness conditions are complete. It is not automatically identical to “Exam enrolled,” “Exam window open,” “Exam submitted,” “Exam passed,” or “Course completed.”
 
-```text
-Final Exam Readiness: 3 of 4 required conditions complete
+## 2. Current LMS grounding
 
-✓ Required lessons completed
-✓ Exam instructions reviewed
-✓ Practice assessment completed
-○ Required project not submitted
+The mock-up already stores:
 
-Next step: Submit the required project
-```
+- Course Instance exam references;
+- assessment type: lesson assessment, quiz exam, or practical exam;
+- exam enrollment;
+- start/end date and time;
+- quiz duration;
+- price and payment-based access;
+- exam URL and practical instruction file;
+- practical submission and submission time;
+- result start/completion time, score, grade, pass-score snapshot, and answer counts;
+- successful Course completion after all attached exams are passed.
 
-For this feature, **Ready** means that all configured required readiness conditions are complete. Optional preparation may improve confidence but must not block readiness.
+The mock-up does **not** store a separate verified exam-attendance event.
 
-## 2. Why
+## 3. Why
 
-The largest business problem is the drop-off between course enrollment and final-exam participation. Learners may not know:
+The feature turns the final exam into a visible part of the Course journey. It answers:
 
-- whether they are eligible or ready;
-- which requirements remain;
-- where to find exam information;
-- whether missing work can be recovered;
-- what action should be completed next.
+- Am I enrolled for the exam?
+- Is the exam available now?
+- Which required learning or preparation condition is missing?
+- Did I submit the practical work?
+- Was my result recorded?
+- Did I pass every required exam?
+- What should I do next?
 
-The feature keeps the final exam visible as part of the course journey and turns preparation into a clear set of achievable requirements.
+## 4. Status model
 
-## 3. How
+A layered model avoids collapsing different meanings into one label.
 
-### 3.1 Readiness statuses
-
-The feature should support these statuses:
+### Readiness status
 
 | Status | Meaning |
 |---|---|
-| Not Available | Readiness tracking or exam information is not yet available |
-| In Progress | At least one required readiness condition remains incomplete |
-| Ready | All required readiness conditions are complete |
-| Exam Attended | Attendance has been confirmed |
-| Exam Completed | Completion has been confirmed, regardless of whether scoring is stored separately |
+| `NOT_CONFIGURED` | No readiness configuration exists |
+| `IN_PROGRESS` | At least one required condition is incomplete |
+| `READY` | All active required conditions are complete |
 
-A course may omit statuses that cannot be supported by its available data.
+### Exam journey state
 
-### 3.2 Readiness requirements
+| State | Meaning |
+|---|---|
+| `NOT_ENROLLED` | Learner is not enrolled for the exam |
+| `SCHEDULED` | Enrolled, but the exam window has not opened |
+| `AVAILABLE` | Current time is inside the access window |
+| `SUBMITTED` | Practical work or quiz result was submitted/recorded |
+| `RESULT_PENDING` | A practical submission exists but no graded result exists |
+| `PASSED` | Result meets the stored pass threshold |
+| `NOT_PASSED` | Result exists below the pass threshold |
+| `CLOSED_NO_RESULT` | Window closed and no result is available |
 
-Course managers should be able to configure meaningful required conditions, such as:
+Courses may omit states that do not apply to their exam type.
 
-- completing required lessons;
-- submitting a required project;
-- passing a required assessment;
-- reviewing exam instructions;
-- confirming intention to attend;
-- satisfying a confirmed attendance requirement;
-- completing another course-specific eligibility condition.
+## 5. Readiness conditions
 
-Each requirement must have a reliable completion source. A requirement must not be configured when the system cannot determine whether it was completed, unless an authorized staff member can confirm it manually.
+Authorized staff may configure meaningful conditions such as:
 
-### 3.3 Optional preparation
+- required Course Progress threshold;
+- selected required lessons completed;
+- required lesson assessment passed;
+- exam enrollment confirmed;
+- exam instructions acknowledged;
+- prerequisite exam or practice assessment completed;
+- another auditable manual condition.
 
-Optional preparation is displayed separately from readiness requirements.
+Every condition requires a reliable source. The system must not infer completion from opening a page or the date passing.
 
-Examples include:
+Existing exam enrollment should normally be shown as an exam journey state. Whether it is also a readiness requirement is course configuration, not a universal rule.
 
-- extra practice tasks;
-- optional Study Group preparation activity;
-- optional Collaborative Challenge connected to exam preparation;
-- additional revision resources;
-- mock exam attempts beyond the required amount.
+## 6. Optional preparation
 
-Optional preparation may contribute to Course Progress optional points or separate achievements, but it does not prevent the learner from becoming Ready.
+Optional preparation may include:
 
-### 3.4 Next action
+- extra practice assessment;
+- Study Group revision session;
+- optional Collaborative Challenge;
+- additional resources;
+- mock exam attempts beyond any required minimum.
 
-When the learner is not Ready, the feature should identify at least one incomplete required condition.
+It may affect optional Course Progress or achievements but does not block `READY`.
 
-When all conditions are complete, it should show the next available exam action, such as:
+## 7. Next action
+
+Examples:
 
 ```text
-You are ready for the final exam.
-Review the exam date and location.
+Next required action: Complete the prerequisite lesson assessment.
 ```
-
-or:
 
 ```text
-You are ready for the final exam.
-Registration opens on 15 June.
+You are ready. The practical exam opens on 15 June at 09:00.
 ```
 
-### 3.5 Configuration
+```text
+Submission received. Your practical result is pending.
+```
 
-Authorized course managers may configure:
+The UI should link to the existing lesson, assessment, checkout/enrollment, exam, instruction, or submission page.
 
-- required readiness conditions;
-- optional preparation activities;
-- condition order and learner-facing text;
-- availability dates and deadlines;
-- recovery or alternative conditions;
-- which statuses are supported by the course;
-- whether manual staff confirmation is allowed.
+## 8. Events
 
-### 3.6 Exam-related events and notifications
-
-This feature may publish readiness events such as:
+Proposed readiness events:
 
 - `EXAM_READINESS_UPDATED`;
 - `EXAM_READY`;
-- `EXAM_READY_REVOKED` after a correction.
+- `EXAM_READY_REVOKED`.
 
-It may consume or expose trusted exam-system events such as `EXAM_REGISTRATION_AVAILABLE`, `EXAM_ATTENDANCE_CONFIRMED`, and `EXAM_COMPLETED`. Attendance and completion must come from a reliable exam, attendance, assessment, or auditable manual source; they must not be inferred from the exam date passing.
+Existing/adapted exam events:
 
-Exam dates, registration deadlines, missing critical requirements, and similar exam information may justify notifications. Notification delivery, channels, frequency, and user preferences should be defined in a separate notification feature.
+- `EXAM_ENROLLED`;
+- `EXAM_WINDOW_OPENED` and `EXAM_WINDOW_CLOSED` as scheduled state changes;
+- `PRACTICAL_SUBMISSION_RECORDED`;
+- `ASSESSMENT_COMPLETED`;
+- `ASSESSMENT_PASSED`;
+- `ASSESSMENT_NOT_PASSED`;
+- `ASSESSMENT_RESULT_CORRECTED`;
+- `COURSE_COMPLETED` after all Course Instance exams are passed.
 
-Ordinary course milestones do not need notifications.
+Exam attendance remains unavailable and must not be emitted without a new trusted source.
 
-## 4. Motivation types supported
+## 9. Live and self-paced behavior
 
-- **Achievers — strong:** a concrete checklist and Ready status provide a clear goal.
-- **Explorers — medium:** optional preparation provides additional paths without changing eligibility.
-- **Socializers — medium:** optional Study Group or Collaborative Challenge preparation may support readiness, but personal readiness must not depend entirely on other learners.
-- **Competitors — low:** readiness is personal and not publicly ranked.
+### Live
 
-## 5. Live-course behavior
+- scheduled lesson dates do not prove attendance;
+- rescheduled/cancelled requirements use corrected dates;
+- late learners see recovery or alternative paths;
+- exam window, location/URL, and deadlines may be shown from current data.
 
-- Readiness may consider scheduled required lessons and confirmed attendance when attendance data exists.
-- A lesson date passing does not prove attendance.
-- Cancelled or rescheduled sessions must use the corrected schedule.
-- Late-enrolling learners should see missed requirements, available recovery paths, and whether readiness is still achievable.
-- Exam dates, locations, registration windows, and deadlines may be shown when supplied by the LMS or another trusted source.
+### Self-paced
 
-## 6. Self-paced-course behavior
+- readiness follows completed conditions rather than a fixed weekly pace;
+- exam deadlines apply only when the exam is configured with them;
+- inactivity does not revoke completed conditions;
+- repeated attempts do not create multiple readiness credit for one condition.
 
-- Readiness should depend on completed requirements rather than a fixed pace.
-- Inactivity does not remove completed conditions.
-- Learners may complete several conditions in one session.
-- Deadlines should apply only when explicitly configured for the course or exam.
-- Repeating an already completed requirement does not increase readiness progress.
+## 10. Rules and edge cases
 
-## 7. Rules and edge cases
+- Readiness belongs to learner + Course Instance.
+- Required and optional conditions are visibly separate.
+- All active required conditions are needed for `READY`.
+- Corrections can return `READY` to `IN_PROGRESS` and must be audited.
+- A practical submission does not imply a passing result.
+- An exam enrollment does not imply attendance.
+- An open/closed exam window does not imply activity.
+- Course completion is reached only through the existing authoritative rule or its future replacement.
+- Requirement changes must define treatment of learners already marked ready.
+- Manual confirmation records actor, time, reason, and any evidence reference.
+- Detailed readiness is private to learner and authorized staff.
 
-- Readiness belongs to a learner and a specific course instance.
-- Required and optional preparation must be visibly separated.
-- Ready is reached only when every active required condition is complete.
-- Duplicate source events must not create duplicate completion records.
-- A corrected source record may return the status from Ready to In Progress, and the correction must be auditable.
-- Requirements added after learners are already Ready should not silently remove readiness unless an administrator explicitly approves how the change applies.
-- A repeated course instance has separate readiness.
-- Manual confirmations must record who made the decision and when.
-- Learners may view only their own detailed readiness data unless authorized otherwise.
-- Exam attendance must not be inferred from enrollment, registration, or the exam date passing.
+## 11. Acceptance criteria
 
-## 8. Acceptance criteria
+### AC1 — Existing exam data
 
-### AC1 — Initial readiness
-
-Given a course has configured final-exam requirements
-and the learner has completed none of them,
+Given the learner is enrolled in a configured exam,
 when readiness is displayed,
-then the status is In Progress
-and the first incomplete required condition is shown.
+then the exam type, relevant window, and enrollment state are shown without being counted as attendance.
 
-### AC2 — Partial readiness
+### AC2 — Ready
 
-Given a course has four required readiness conditions
-and the learner has completed three,
-when readiness is displayed,
-then the system shows 3 of 4 complete
-and identifies the remaining condition.
+Given all active required conditions are complete,
+when readiness is calculated,
+then status becomes `READY` once and `EXAM_READY` may be published.
 
-### AC3 — Ready status
+### AC3 — Practical result pending
 
-Given all active required readiness conditions are complete,
-when readiness is evaluated,
-then the learner's status becomes Ready once
-and an EXAM_READY event may be published.
+Given a valid practical submission exists
+and no result exists,
+when the exam journey is shown,
+then the state is `RESULT_PENDING`, not `PASSED` or `EXAM_ATTENDED`.
 
-### AC4 — Optional preparation
+### AC4 — Passed result
 
-Given the learner has not completed an optional preparation activity,
-when all required readiness conditions are complete,
-then the learner may still become Ready.
+Given an exam result score meets its stored pass score,
+when the result is evaluated,
+then that exam state becomes `PASSED` and the associated readiness condition may complete once.
 
-### AC5 — No assumed attendance
+### AC5 — All-exam Course completion
 
-Given the exam date has passed
-and no confirmed attendance record exists,
-when readiness is evaluated,
-then the learner is not marked Exam Attended.
+Given every attached Course Instance exam has a passing result,
+when the authoritative completion service runs,
+then Course completion may be recorded and published separately from readiness.
 
-### AC6 — Duplicate completion event
+### AC6 — No assumed attendance
 
-Given a readiness condition is already complete,
-when the same source event is processed again,
-then the completed-condition count does not increase.
+Given the exam window closed
+and no attendance source exists,
+when the learner view is calculated,
+then the system does not show `Exam Attended`.
 
-### AC7 — Corrected requirement
+### AC7 — Result correction
 
-Given the learner is Ready
-and an authorized correction removes completion of a required condition,
-when readiness is recalculated,
-then the status returns to In Progress
-and the correction is recorded for auditing.
+Given a previously passing result is corrected below the threshold,
+when readiness and completion are recalculated,
+then affected conditions and rewards receive auditable correction events.
 
-### AC8 — Exam notification integration
+## 12. Data and model extensions
 
-Given an exam-related event is published,
-when a separate notification feature consumes the event,
-then notification behavior may be applied without being implemented inside Final Exam Readiness.
+### Existing data
 
-## 9. Required LMS data
+- learner/Course Instance/Assessment enrollment;
+- exam metadata and window;
+- results, scores, pass thresholds, timestamps;
+- practical submissions;
+- successful Course records.
 
-### Confirmed from the supplied models
+### New data
 
-- learner enrollment in a course instance;
-- lesson completion with timestamps;
-- course-instance exam references;
-- live or self-paced course type;
-- successful course completion.
+#### `ExamReadinessConfiguration`
 
-### Missing or not confirmed
+Stores Course Instance, conditions, order, display text, alternatives, dates, manual-confirmation policy, and version.
 
-- final-exam attendance;
-- final-exam completion or score;
-- assignment or project submission;
-- assessment attempt and pass/fail result;
-- review of exam instructions;
-- intention-to-attend confirmation;
-- reliable live-session attendance;
-- exact exam eligibility rules.
+#### `UserExamReadiness`
 
-These missing events require new tracking, integration with another LMS service, or an auditable manual confirmation.
+Stores learner, Course Instance, readiness status, completed/total counts, next action, and calculation version/time.
 
-## 10. Model extensions
+#### `ExamRequirementCompletion`
 
-### `ExamReadinessConfiguration`
+Stores one condition result with trusted source occurrence or manual confirmation and correction history.
 
-Defines the readiness conditions, optional preparation activities, ordering, availability, deadlines, recovery rules, and course-instance scope.
+## 13. Success measures
 
-### `UserExamReadiness`
-
-Stores the learner, course instance, current status, completed required-condition count, total required-condition count, next required action, and last calculation time.
-
-### `ExamRequirementCompletion`
-
-Stores completion of an individual condition, including its source event or manual confirmation and audit information.
-
-## 11. Success measure
-
-The feature should be evaluated through:
-
-- percentage of enrolled learners who open or begin the readiness checklist;
-- percentage who reach Ready status;
-- conversion from Ready to Exam Attended;
-- conversion from Exam Attended to Exam Completed;
-- most common incomplete requirement;
-- change in overall final-exam participation;
-- change in course completion after the feature is introduced.
-
-## Related features
-
-- [Course Progress](course-progress.md) provides required and optional learning progress that may satisfy readiness conditions.
-- [Course Milestones](course-milestones.md) may recognize the Ready, Exam Attended, or Exam Completed events, but does not define the readiness requirements.
-
-See [Gamification Event Matrix](../06-integrations/gamification-event-matrix.md) for proposed event ownership and integrations.
+- learners viewing/beginning the checklist;
+- learners reaching `READY`;
+- exam enrollment and availability conversion;
+- practical submission or quiz completion;
+- exam pass rates;
+- all-exam Course completion;
+- most common missing readiness condition;
+- change in final-exam participation once attendance data is available.
